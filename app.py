@@ -3,7 +3,7 @@ import requests
 import random
 
 st.set_page_config(page_title="Tumblr Feed Casuale", layout="wide")
-st.title("🎲 Tumblr Feed Casuale")
+st.title("🎲 Il mio Tumblr in ordine casuale")
 
 # ==== CONFIGURAZIONE - CAMBIA QUESTO! ====
 blog_identifier = "pillolediuomo.tumblr.com"  # <-- METTI IL TUO BLOG QUI!
@@ -11,107 +11,126 @@ blog_identifier = "pillolediuomo.tumblr.com"  # <-- METTI IL TUO BLOG QUI!
 
 API_KEY = "fuiKNFp9vQFvjLNvx4sUwti4Yb5yGutBN4Xh10LXZhhRKjWlV4"
 
-# ==== TEST DIAGNOSTICO ====
-st.subheader("🔍 Diagnostica")
-
-# Test 1: Info blog
-test_url = f"https://api.tumblr.com/v2/blog/{blog_identifier}/info"
-test_params = {'api_key': API_KEY}
-
-try:
-    response = requests.get(test_url, params=test_params)
-    data = response.json()
-    
-    st.write(f"**URL testato:** `{test_url}`")
-    st.write(f"**Status code HTTP:** {response.status_code}")
-    st.write(f"**Meta risposta:** {data.get('meta', {})}")
-    
-    if data.get('meta', {}).get('status') == 200:
-        blog_info = data.get('response', {}).get('blog', {})
-        st.success(f"✅ Blog trovato! Nome: {blog_info.get('name')}")
-        st.write(f"**Post totali:** {blog_info.get('total_posts', 0)}")
-        st.write(f"**Visibilità:** {'Pubblico' if blog_info.get('is_adult', False)==False else 'Adulti'}")
-    else:
-        st.error(f"❌ Errore: {data.get('meta', {}).get('msg')}")
-        if data.get('errors'):
-            st.json(data.get('errors'))
-            
-except Exception as e:
-    st.error(f"❌ Errore di connessione: {e}")
-
-st.divider()
-
-# ==== RECUPERO POST (solo se il test è ok) ====
 @st.cache_data(ttl=3600)
 def get_all_posts():
     all_posts = []
     offset = 0
     limit = 20
     
-    progress_bar = st.progress(0)
-    
-    # Prima chiamata per sapere quanti post totali
+    # Prima chiamata per sapere quanti post totali e struttura
     url = f"https://api.tumblr.com/v2/blog/{blog_identifier}/posts"
-    params = {'api_key': API_KEY, 'limit': 1, 'npf': True}
     
     try:
+        # Chiamata base senza npf per evitare complicazioni
+        params = {
+            'api_key': API_KEY,
+            'limit': limit,
+            'offset': offset
+        }
+        
         response = requests.get(url, params=params)
         data = response.json()
-        total_posts = data.get('response', {}).get('total_posts', 0)
         
-        if total_posts == 0:
-            st.warning("Il blog ha 0 post pubblici.")
+        # Verifica la risposta
+        if 'response' not in data:
+            st.error(f"Risposta API inaspettata: {data.get('meta', {}).get('msg', 'Errore sconosciuto')}")
+            return []
+        
+        # Estrai i post - in modo sicuro
+        posts_data = data['response']
+        
+        # Gestione del caso in cui posts_data sia una lista o un dizionario
+        if isinstance(posts_data, list):
+            # Se è una lista, potrebbe contenere direttamente i post
+            all_posts = posts_data
+        elif isinstance(posts_data, dict):
+            # Se è un dizionario, cerca i posts
+            if 'posts' in posts_data:
+                all_posts = posts_data['posts']
+            else:
+                # Forse è il blog info? Prova a vedere se ci sono post in altro modo
+                st.warning(f"Struttura dati ricevuta: {list(posts_data.keys())}")
+                return []
+        
+        # Se non abbiamo trovato post, ritorna lista vuota
+        if not all_posts:
             return []
             
-        st.write(f"📊 **Trovati {total_posts} post totali**")
+        # Ora prova a recuperare tutti i post (paginazione)
+        total_posts = data.get('response', {}).get('total_posts', len(all_posts))
         
-        while offset < min(total_posts, 1000):
-            params = {'api_key': API_KEY, 'limit': limit, 'offset': offset, 'npf': True}
+        # Se ci sono più post da recuperare
+        while len(all_posts) < min(total_posts, 1000) and offset + limit < min(total_posts, 1000):
+            offset += limit
+            params['offset'] = offset
             response = requests.get(url, params=params)
             data = response.json()
             
-            posts = data.get('response', {}).get('posts', [])
-            if not posts:
+            more_posts = data.get('response', {})
+            if isinstance(more_posts, dict) and 'posts' in more_posts:
+                new_posts = more_posts['posts']
+            elif isinstance(more_posts, list):
+                new_posts = more_posts
+            else:
                 break
                 
-            all_posts.extend(posts)
-            offset += limit
-            progress_bar.progress(min(offset / total_posts, 1.0))
+            if not new_posts:
+                break
+            all_posts.extend(new_posts)
             
     except Exception as e:
         st.error(f"Errore nel recupero: {e}")
-        
-    progress_bar.empty()
+        import traceback
+        st.code(traceback.format_exc())
+    
     return all_posts
 
 # Bottone per refresh
 if st.button("🔀 Mostra post in ordine casuale"):
     st.cache_data.clear()
-    st.rerun()
 
 with st.spinner("Caricamento post..."):
     posts = get_all_posts()
 
 if posts:
+    # Mescola i post
     shuffled = random.sample(posts, len(posts))
-    st.caption(f"🎲 Mostrati {len(shuffled)} post in ordine casuale")
+    st.caption(f"🎲 Trovati {len(posts)} post. Mostrati in ordine casuale.")
     
-    for post in shuffled:
+    for i, post in enumerate(shuffled[:50]):  # Mostra max 50 per volta
         with st.container():
-            # Mostra contenuto semplificato per test
-            st.markdown(f"**ID:** {post.get('id')}")
-            st.markdown(f"**Data:** {post.get('date')}")
-            st.markdown(f"**URL:** [link]({post.get('post_url')})")
+            st.markdown(f"**Post #{i+1}**")
             
-            # Mostra un estratto
+            # Mostra informazioni di base
             if 'summary' in post and post['summary']:
-                st.markdown(f"**Riassunto:** {post['summary'][:200]}")
-            elif 'content' in post:
-                for block in post.get('content', []):
-                    if block.get('type') == 'text':
-                        st.markdown(block.get('text', '')[:200])
-                        break
+                st.markdown(f"📝 {post['summary'][:300]}")
+            elif 'body' in post:
+                st.markdown(f"📝 {post['body'][:300]}")
+            elif 'title' in post and post['title']:
+                st.markdown(f"📌 **{post['title']}**")
+            
+            # Mostra il link
+            post_url = post.get('post_url')
+            if post_url:
+                st.markdown(f"[🔗 Vedi il post originale]({post_url})")
+            
+            # Mostra data
+            if 'date' in post:
+                st.caption(f"📅 {post['date']}")
+            
+            # Mostra tags se presenti
+            if 'tags' in post and post['tags']:
+                tags_str = ", ".join(post['tags'][:5])
+                st.caption(f"🏷️ {tags_str}")
             
             st.divider()
 else:
-    st.warning("Nessun post trovato. Controlla i risultati della diagnostica sopra.")
+    st.warning("""
+    ### Nessun post trovato.
+    
+    **Possibili cause:**
+    1. Il blog non ha post pubblici
+    2. Il nome del blog è sbagliato (deve essere `nomedelblog.tumblr.com`)
+    3. Il blog è impostato come "nascosto" o "privato"
+    
+    **Verifica con questo link nel browser:**
