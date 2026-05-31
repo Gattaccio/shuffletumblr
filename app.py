@@ -153,15 +153,18 @@ if shuffled_posts:
             
             # Mostra solo i primi 50 post per performance
             if i >= 49:
-                st.info(f"📄 Mostrati i primi 50 post su {len(shuffled_posts)}. Ricarica la pagina per vedere altri post in ordine casuale.")
+                st.info("📄 Mostrati i primi 50 post. Clicca su 'Mescola e Mostra' per vedere altri post in ordine casuale.")
                 break
 else:
-    st.warning(f"""
-    ### ⚠️ Nessun post pubblico trovato per `{BLOG_IDENTIFIER}`
-    
-    **Possibili cause:**
-    1. **Blog privato/nascosto** - L'API non può leggere blog con l'impostazione "Nascondi blog dai risultati di ricerca" attivata
-    2. **Blog vuoto** - Nessun post pubblicato
-    3. **Nome errato** - Verifica che sia esattamente `nomedeltuoblog.tumblr.com`
-    
-    **Per verificare, apri questo link nel browser:**
+    warning_message = f"""
+### ⚠️ Nessun post pubblico trovato per `{BLOG_IDENTIFIER}`
+
+**Possibili cause:**
+1. **Blog privato/nascosto** - L'API non può leggere blog con l'impostazione "Nascondi blog dai risultati di ricerca" attivata
+2. **Blog vuoto** - Nessun post pubblicato
+3. **Nome errato** - Verifica che sia esattamente `nomedeltuoblog.tumblr.com`
+
+**Per verificare, apri questo link nel browser:**
+`https://api.tumblr.com/v2/blog/{BLOG_IDENTIFIER}/info?api_key={API_KEY}`
+"""
+    st.warning(warning_message)
