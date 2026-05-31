@@ -5,7 +5,7 @@ import random
 st.set_page_config(page_title="Tumblr Feed Casuale", layout="wide")
 st.title("🎲 Il mio Tumblr in ordine casuale")
 
-blog_identifier = "https://www.tumblr.com/blog/pillolediuomo"  # CAMBIA QUESTO!
+blog_identifier = "https://pillolediuomo.tumblr.com/"  # CAMBIA QUESTO!
 
 @st.cache_data(ttl=3600)  # Cache per 1 ora per non chiamare l'API troppo spesso
 def get_all_posts():
