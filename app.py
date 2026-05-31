@@ -6,7 +6,7 @@ st.set_page_config(page_title="Tumblr Feed Casuale", layout="wide")
 st.title("🎲 Il mio Tumblr in ordine casuale")
 
 # ==== CONFIGURAZIONE - CAMBIA QUESTO! ====
-blog_identifier = "iltuoblog.tumblr.com"  # <-- METTI IL TUO BLOG QUI!
+blog_identifier = "pillolediuomo.tumblr.com"  # <-- METTI IL TUO BLOG QUI!
 # ========================================
 
 API_KEY = "fuiKNFp9vQFvjLNvx4sUwti4Yb5yGutBN4Xh10LXZhhRKjWlV4"
