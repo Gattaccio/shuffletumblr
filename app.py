@@ -6,7 +6,7 @@ st.set_page_config(page_title="Tumblr Feed Casuale", layout="wide")
 st.title("🎲 Il mio Tumblr in ordine casuale")
 
 # CAMBIA QUESTO con il nome del tuo blog (es. "mio-blog.tumblr.com")
-blog_identifier = "il-tuo-blog.tumblr.com"
+blog_identifier = "pillolediuomo.tumblr.com"
 
 # API key pubblica di Tumblr (funziona per tutti i blog pubblici)
 # Questa è la chiave demo ufficiale di Tumblr
